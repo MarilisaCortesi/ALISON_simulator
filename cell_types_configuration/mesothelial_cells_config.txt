@@ -1,0 +1,23 @@
+Mesothelial cells configuration file
+
+states:
+1. dead
+2. healthy
+
+behaviour:
+1 -> 0, a*time_death
+2 -> 1, b*age + c/oxygen + d/glucose
+
+
+environment interaction:
+2 -> oxygen_consumption (e)
+2 -> glucose_consumption (f)
+2 -> lactate_production (f)
+
+parameters:
+a: 0.01
+b: 0.01
+c: 0.01
+d: 0.01
+e: 1e-10
+f: 1e-10
