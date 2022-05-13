@@ -94,9 +94,6 @@ class ALISON:
 				break
 		return out_variable
 
-
-
-
 	@staticmethod
 	def save_output(output_folder, unit):
 		files = os.listdir(output_folder)

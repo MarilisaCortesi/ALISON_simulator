@@ -1,4 +1,4 @@
-from ALISON import mesh_configurator as mesh
+import mesh_configurator as mesh
 import dill
 
 base_name = 'tetgen_80K_elements'
