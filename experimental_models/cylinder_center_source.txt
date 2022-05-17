@@ -1,23 +1,8 @@
-# This file contains the configuration parameters for the organotypic model initially described in Peters et al 2015
-#(doi: 10.3791/53541). It is composed of 3 layers initially containing fibroblasts (the bottom one), mesothelial cells (middle)
-# and cancer cells (the top). The amount of fibroblasts and mesothelial cells is fixed while the number of cancer cells
-# can be adjusted (in the main configuration file).
-
 mesh:
 name -> tetgen_80K_elements
 
-cells:
-fibroblasts -> fibroblast_cells_config.txt, 4000, healthy, bottom layer
-mesothelial -> mesothelial_cells_config.txt, 20000, healthy, middle layer
-
-layers:
-bottom layer -> 0,50
-middle layer -> 50,75
-top layer -> 75, 100
-
 boundary conditions:
-fixed value -> top
-fixed flux -> bottom, side
+fixed flux -> top, bottom, side
 
 material parameters:
 # mass density of the structure [g/mm3]

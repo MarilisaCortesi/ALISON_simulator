@@ -7,6 +7,7 @@ import dill
 import numpy as np
 import numpy.random as random
 from scipy.sparse import lil_array
+import scipy.sparse.linalg
 from ALISON import utility
 from ALISON import DS3FE
 from ALISON import cells
@@ -48,10 +49,14 @@ class ALISON:
 		# function that runs the simulation. #TODO: modify when integrating the FEM.
 		iterations, resolution, unit = ALISON.get_iterations(self.experiment_configuration)
 		simulation_folder = self.initialize_outputs(self.cell_population, self.precomputed_mesh_parameters.mesh, self.base_name)
+		field_predictor = DS3FE.get_field_predictor(self.precomputed_mesh_parameters, self.f)
+		fd_1 = scipy.sparse.linalg.inv(self.precomputed_mesh_parameters.m + 0.5 * self.precomputed_mesh_parameters.k)
 		for t in range(iterations):
+			print(t)
 			time = t * resolution
-			self.precomputed_mesh_parameters.mesh = DS3FE.update_environment(self.precomputed_mesh_parameters.mesh,
-																			 self.cell_population)
+			self.precomputed_mesh_parameters.mesh, field_predictor = DS3FE.update_environment(self.precomputed_mesh_parameters,field_predictor,
+																			 self.boundary_conditions, self.fixed_flux,
+																			 self.initial_conditions, fd_1, self.kt_bar, self.cell_population)
 			update_order = self.get_order(self.cell_population)  # order with which the cells are updated
 			n_cells = len(self.cell_population)
 			for o in update_order:

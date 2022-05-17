@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import scipy.sparse.linalg
 from ALISON import utility
 
 
@@ -19,21 +20,22 @@ def get_material_properties(mat_prop):
 
 def get_boundary_conditions(mesh_conf, mesh):
 	output_variable = {'fixed_value': [], 'fixed_flux': []}
-	if type(mesh_conf['fixed value']) == str:
-		output_variable['fixed_value'] = get_elements_mesh(mesh, mesh_conf['fixed value'])
-	elif type(mesh_conf['fixed value']) == list:
-		for f in mesh_conf['fixed value']:
-			output_variable['fixed_value'] += get_elements_mesh(mesh, f)
-	else:
-		raise ValueError('unrecognized fixed value type')
-
-	if type(mesh_conf['fixed flux']) == str:
-		output_variable['fixed_flux'] = get_elements_mesh(mesh, mesh_conf['fixed flux'])
-	elif type(mesh_conf['fixed flux']) == list:
-		for f in mesh_conf['fixed flux']:
-			output_variable['fixed_flux'] += get_elements_mesh(mesh, f)
-	else:
-		raise ValueError('unrecognized fixed value type')
+	if 'fixed value' in mesh_conf:
+		if type(mesh_conf['fixed value']) == str:
+			output_variable['fixed_value'] = get_elements_mesh(mesh, mesh_conf['fixed value'])
+		elif type(mesh_conf['fixed value']) == list:
+			for f in mesh_conf['fixed value']:
+				output_variable['fixed_value'] += get_elements_mesh(mesh, f)
+		else:
+			raise ValueError('unrecognized fixed value type')
+	if 'fixed flux' in mesh_conf:
+		if type(mesh_conf['fixed flux']) == str:
+			output_variable['fixed_flux'] = get_elements_mesh(mesh, mesh_conf['fixed flux'])
+		elif type(mesh_conf['fixed flux']) == list:
+			for f in mesh_conf['fixed flux']:
+				output_variable['fixed_flux'] += get_elements_mesh(mesh, f)
+		else:
+			raise ValueError('unrecognized fixed value type')
 	return output_variable
 
 
@@ -103,6 +105,22 @@ def initialize_f_ktbar(precomputed_parameters, initial_conditions, boundary_cond
 			output_f[ic] += fe
 	return output_f, output_ktbar
 
+def get_f(precomputed_pars, el, ktbar, rate):
+	mesh = precomputed_pars.mesh
+	out_f = np.zeros(mesh.n_points)
+	det_j = np.linalg.det(precomputed_pars.jacobian[el])
+	integration_points = 4  # [[0.1381966, 0.1381966, 0.1381966], [0.58541020, 0.1381966, 0.1381966],
+	# [0.1381966, 0.58541020, 0.1381966], [0.1381966, 0.1381966, 0.58541020]]
+	w = 0.0416667
+	ncp = (-1) * rate
+	for jj, j in enumerate(precomputed_pars.nodes_in_elements[el]):
+		temp1 = []
+		for ip in range(integration_points):
+			nj = precomputed_pars.ns[el][jj][ip]
+			temp1.append(nj * det_j * w * ncp)
+		out_f[j] = sum(temp1) + ktbar[el][jj]
+	return out_f
+
 
 def get_fe(precomputed_pars, boundary, el, cell_pop, init_cnd, field):
 	output_f = np.zeros(precomputed_pars.mesh.n_points)
@@ -155,21 +173,64 @@ def compute_ktbar(k, boundary, idx, variable_level):
 
 def initialize_fields(mesh, initial_conditions, boundary, fixed_value, fixed_flux):
 	for i in initial_conditions:
-		mesh.field_data[i] = initial_conditions[i] + np.zeros(mesh.n_faces)
+		mesh.field_data[i] = initial_conditions[i] + np.zeros(mesh.n_points)
 		mesh[i][boundary['fixed_value']] = fixed_value[i]
 		mesh[i][boundary['fixed_flux']] = fixed_flux
 	return mesh
 
 
-def update_environment(mesh, cell_population):
+def get_field_predictor(parameters, f):
+	field_predictor = {}
+	fields = parameters.mesh.array_names
+	fields.remove('cells')
+	for field in fields:
+		temp = parameters.k.dot(parameters.mesh[field])
+		field_derivative = scipy.sparse.linalg.inv(parameters.m).dot(f[field] - temp)
+		field_predictor[field] = parameters.mesh[field] + 0.5 * field_derivative
+	return field_predictor
+
+def update_environment(precomputed_pars, field_predictor, boundary_conditions, fixed_flux, initial_conditions,
+					   fd_1, ktbar, cell_population):
+	mesh = precomputed_pars.mesh
 	fields = mesh.array_names
 	fields.remove('cells')
-	for c in cell_population:
-		for f in fields:
-			change = get_rate(c, f)
-			mesh[f][c.location] += change
-	return mesh
+	field_predictor_out ={}
+	for field in fields:
+		temp_field, field_predictor_out[field] = solve_diffusion(precomputed_pars, field_predictor, boundary_conditions, fd_1, fixed_flux, initial_conditions[field], field,ktbar, cell_population)
+		for xx, x in enumerate(temp_field):
+			mesh[field][xx] = x
+	return mesh, field_predictor_out
 
+
+def recompute_f(precomputed_pars, field, ktbar, cell_population):
+	mesh = precomputed_pars.mesh
+	tmp = np.zeros(mesh.n_points)
+	for e in range(mesh.n_faces):
+		production_consumption = get_production_consumption(cell_population, e, field)
+		fe = get_f(precomputed_pars, e, ktbar[field], production_consumption)
+		tmp += fe
+	return tmp
+
+
+def get_production_consumption(cell_pop, e, field):
+	rate = 0
+	for c in cell_pop:
+		if cell_pop.location == e:
+			rate = get_rate(c, field)
+			break
+	return rate
+
+
+def solve_diffusion(precomputed_pars, field_predictor, boundary_condition, fd_1, fixed_flux, init_cond, field, ktbar, cell_population):
+	f = recompute_f(precomputed_pars, field, ktbar, cell_population)
+	el_1 = precomputed_pars.k.dot(field_predictor[field])
+	field_derivative = fd_1.dot(f - el_1)
+	field_derivative[boundary_condition['fixed_flux']] = fixed_flux
+	field = field_predictor[field] + 0.5 * field_derivative
+	field[np.where(field < 0)] = 0
+	field[boundary_condition['fixed_value']] = init_cond
+	field_predictor = field + 0.5 * field_derivative
+	return field, field_predictor
 
 '''
 class FEM:
