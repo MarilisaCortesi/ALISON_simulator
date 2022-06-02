@@ -5,7 +5,8 @@ cells:
 dummy -> dummy_cells_config.txt, 400, live, all layers
 
 boundary conditions:
-fixed flux -> top, bottom, side
+fixed flux ->  bottom, side
+fixed value -> top
 
 layers:
 all layers -> 0,100

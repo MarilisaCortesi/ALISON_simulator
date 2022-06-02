@@ -1,7 +1,7 @@
 # Main configuration file
 
 organotypic model:
-experimental model -> cylinder_sources_isolated.txt
+experimental model -> cylinder_sources_open_top.txt
 
 experimental conditions:
 duration -> 10000 h

@@ -10,12 +10,21 @@ def find_cell(cell_population, location):
 			return c
 
 
-def get_material_properties(mat_prop):
-	output_variable = {'rho': None, 'cv': None, 'k': None}
-	for m in mat_prop:
-		if m in output_variable:
-			output_variable[m] = float(mat_prop[m])
-	return output_variable
+def get_material_properties(file_path):
+	out = {}
+	with open(file_path) as F:
+		for r in F.readlines():
+			if '#' not in r:
+				temp = r.split('\n')[0].split('->')
+				variable = temp[0].split('[')[0].strip()
+				unit = temp[0].split('[')[1].split(']')[0].strip()
+				has_time, unit = utility.contains_time_unit(unit)
+				if has_time:
+					value, unit2 = utility.convert_in_hours(temp[1] + unit)
+				else:
+					value = float(temp[1])
+				out[variable] = value
+	return out
 
 
 def get_boundary_conditions(mesh_conf, mesh):
@@ -66,9 +75,9 @@ def get_glucose_level(media, mesh_elements):
 	with open(full_path) as F:
 		for r in F.readlines():
 			if 'glucose' in r:
-				level_gml = 1000 * float(r.split('->')[1].split('[')[0])  # g/ml in ug/ul
+				level_gml = float(r.split('->')[1].split('[')[0])/1000  # g/ml
 				break
-	gculture = 200 * level_gml  #each culture has a volume of 200 ul
+	gculture = 200 * level_gml  #each culture has a volume of 200 ul #TODO remove this magic number
 	return gculture/mesh_elements
 
 
@@ -77,10 +86,10 @@ def get_initial_conditions(configuration, mesh_elements):
 	# multiple treatments and is not mandatory
 	output_initial_conditions = {'oxygen': None, 'glucose': None, 'lactate': 0}
 	output_fixed_flux = 0
-	output_initial_conditions['oxygen'] = get_oxygen_level(configuration['oxygen'], mesh_elements)
-	output_initial_conditions['glucose'] = get_glucose_level(configuration['media'], mesh_elements)
+	output_initial_conditions['oxygen'] = round(get_oxygen_level(configuration['oxygen'], mesh_elements),3)
+	output_initial_conditions['glucose'] = round(get_glucose_level(configuration['media'], mesh_elements),3)
 	if configuration['treatment'] != 'none':
-		output_initial_conditions['drug'] = get_drug_level(configuration['drug'], mesh_elements)
+		output_initial_conditions['drug'] = round(get_drug_level(configuration['drug'], mesh_elements),3)
 	return output_initial_conditions, output_fixed_flux
 
 
@@ -175,28 +184,33 @@ def initialize_fields(mesh, initial_conditions, boundary, fixed_value, fixed_flu
 	for i in initial_conditions:
 		mesh.field_data[i] = initial_conditions[i] + np.zeros(mesh.n_points)
 		mesh[i][boundary['fixed_value']] = fixed_value[i]
-		mesh[i][boundary['fixed_flux']] = fixed_flux
+		#mesh[i][boundary['fixed_flux']] = fixed_flux
 	return mesh
 
 
-def get_field_predictor(parameters, f):
+def get_field_predictor(parameters, f, boundary_conditions, fixed_flux):
 	field_predictor = {}
 	fields = parameters.mesh.array_names
 	fields.remove('cells')
 	for field in fields:
 		temp = parameters.k.dot(parameters.mesh[field])
-		field_derivative = scipy.sparse.linalg.inv(parameters.m).dot(f[field] - temp)
-		field_predictor[field] = parameters.mesh[field] + 0.5 * field_derivative
+		temp2 = f[field] - temp
+		[field_derivative, info] = scipy.sparse.linalg.cg(parameters.m, temp2)
+		#field_derivative[field_derivative < 10e-3] = 0
+		#field_derivative = parameters.inv_m.dot(temp2)
+		#field_derivative[boundary_conditions['fixed_flux']] = fixed_flux
+		field_predictor[field] = parameters.mesh[field] + 0.5 * field_derivative # 0.01 is deltat
 	return field_predictor
 
+
 def update_environment(precomputed_pars, field_predictor, boundary_conditions, fixed_flux, initial_conditions,
-					   fd_1, ktbar, cell_population):
+					   inv_m05k, ktbar, cell_population):
 	mesh = precomputed_pars.mesh
 	fields = mesh.array_names
 	fields.remove('cells')
-	field_predictor_out ={}
+	field_predictor_out = {}
 	for field in fields:
-		temp_field, field_predictor_out[field] = solve_diffusion(precomputed_pars, field_predictor, boundary_conditions, fd_1, fixed_flux, initial_conditions[field], field,ktbar, cell_population)
+		temp_field, field_predictor_out[field] = solve_diffusion(precomputed_pars, field_predictor, boundary_conditions, inv_m05k, fixed_flux, initial_conditions[field], field,ktbar, cell_population)
 		for xx, x in enumerate(temp_field):
 			mesh[field][xx] = x
 	return mesh, field_predictor_out
@@ -215,22 +229,38 @@ def recompute_f(precomputed_pars, field, ktbar, cell_population):
 def get_production_consumption(cell_pop, e, field):
 	rate = 0
 	for c in cell_pop:
-		if cell_pop.location == e:
+		if c.location == e:
 			rate = get_rate(c, field)
 			break
 	return rate
 
 
-def solve_diffusion(precomputed_pars, field_predictor, boundary_condition, fd_1, fixed_flux, init_cond, field, ktbar, cell_population):
+def solve_diffusion(precomputed_pars, field_predictor, boundary_condition, inv_m05k, fixed_flux, init_cond, field, ktbar, cell_population):
 	f = recompute_f(precomputed_pars, field, ktbar, cell_population)
 	el_1 = precomputed_pars.k.dot(field_predictor[field])
-	field_derivative = fd_1.dot(f - el_1)
-	field_derivative[boundary_condition['fixed_flux']] = fixed_flux
-	field = field_predictor[field] + 0.5 * field_derivative
+	a_matrix = precomputed_pars.m + 0.5 * precomputed_pars.k
+	b_matrix = (0.5 * 1 * f + precomputed_pars.m.dot(field_predictor[field]))
+	[field_values, info] = scipy.sparse.linalg.cg(a_matrix, b_matrix)
+	for ff in range(len(field_values)):
+		field_values[ff] = round(field_values[ff], 3)  #necessary to avoid drift in homogeneous fields
+	#field_values[np.where(field_values < 0)] = 0
+	field_values[boundary_condition['fixed_value']] = init_cond
+	[field_derivative, info_der] = scipy.sparse.linalg.cg(precomputed_pars.m, f-el_1)
+	#field_derivative = (field_values - field_predictor[field])/(0.5*0.001)
+	#field_derivative[field_derivative < 1e-3] = 0
+	print('a')
+	'''
+	field_derivative = inv_m05k.dot(f - el_1)
+	#field_derivative[boundary_condition['fixed_flux']] = fixed_flux
+	field = field_predictor[field] + 0.5 * 1 * field_derivative
 	field[np.where(field < 0)] = 0
 	field[boundary_condition['fixed_value']] = init_cond
-	field_predictor = field + 0.5 * field_derivative
-	return field, field_predictor
+	'''
+	field_predictor = field_values + 0.5 * field_derivative
+	#field_predictor[np.where(field_predictor<0 )] =0
+
+
+	return field_values, field_predictor
 
 '''
 class FEM:

@@ -1,6 +1,7 @@
-# mass density of the structure [g/mm3]
-rho -> 0.001
-# heat capacity i.e. amount of energy needed to change the temperature by one point. The reasoning behind this value is in notebook 2
-cv -> 1
-# thermal conductivity. Average of measured value in collagen gel. See notebook 2
-k -> 1.65e-6
+# CHECK THE MEASUREMENT UNITS the sw makes some automatic conversions
+# mass density of the structure
+rho [ug/mm3]-> 1000
+# heat capacity  i.e. amount of energy needed to change the temperature by one point. The reasoning behind this value is in notebook 2
+cv [J*l/ug]-> 0.000001
+# thermal conductivity. Average of measured value in collagen gel. See notebook 2.  I have reduced it by 2 orders of magnitude. Too high otherwise
+k [mm2/s]-> 1.65e-8

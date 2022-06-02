@@ -21,14 +21,14 @@ class ALISON:
 			self.read_main_configuration_file(full_path_configuration)
 		full_path_mesh = os.getcwd() + os.path.sep + 'meshes' + os.path.sep + self.mesh_configuration[
 			'name'] + os.path.sep + self.mesh_configuration['name'] + '.pickle'
+		full_path_material_properties = os.getcwd() + os.path.sep + 'meshes' + os.path.sep + self.mesh_configuration[
+			'name'] + os.path.sep + self.mesh_configuration['name'] + '.matprop'
 		try:
 			with open(full_path_mesh, 'rb') as F:
 				self.precomputed_mesh_parameters = dill.load(F)
-			self.neighbours = self.get_neighbours(self.precomputed_mesh_parameters.mesh,
-												  self.precomputed_mesh_parameters.nodes_in_elements)  # TODO move to configure_mesh
 			self.cell_population = self.add_cells(self.cells_configuration, self.mesh_configuration,
 												  self.precomputed_mesh_parameters.mesh)
-			self.material = DS3FE.get_material_properties(self.mesh_configuration)
+			self.material = DS3FE.get_material_properties(full_path_material_properties)
 			self.boundary_conditions = DS3FE.get_boundary_conditions(self.mesh_configuration,
 																	 self.precomputed_mesh_parameters.mesh)
 			self.initial_conditions, self.fixed_flux = DS3FE.get_initial_conditions(self.experiment_configuration,
@@ -43,36 +43,45 @@ class ALISON:
 			raise FileNotFoundError(
 				'mesh configuration file not found. Please run configure_mesh.py to configure the mesh')
 
-
-
 	def simulate(self):
 		# function that runs the simulation. #TODO: modify when integrating the FEM.
 		iterations, resolution, unit = ALISON.get_iterations(self.experiment_configuration)
-		simulation_folder = self.initialize_outputs(self.cell_population, self.precomputed_mesh_parameters.mesh, self.base_name)
-		field_predictor = DS3FE.get_field_predictor(self.precomputed_mesh_parameters, self.f)
-		fd_1 = scipy.sparse.linalg.inv(self.precomputed_mesh_parameters.m + 0.5 * self.precomputed_mesh_parameters.k)
+		simulation_folder = self.initialize_outputs(self.cell_population, self.precomputed_mesh_parameters.mesh,
+													self.base_name)
+		field_predictor = DS3FE.get_field_predictor(self.precomputed_mesh_parameters, self.f, self.boundary_conditions, self.fixed_flux)
+		not_fixed = list(
+			set(range(self.precomputed_mesh_parameters.mesh.n_points)) - set(self.boundary_conditions['fixed_flux']))
+		xx_0 = self.precomputed_mesh_parameters.mesh['glucose']
+		sxx_0 = sum(xx_0)
 		for t in range(iterations):
 			print(t)
 			time = t * resolution
-			self.precomputed_mesh_parameters.mesh, field_predictor = DS3FE.update_environment(self.precomputed_mesh_parameters,field_predictor,
-																			 self.boundary_conditions, self.fixed_flux,
-																			 self.initial_conditions, fd_1, self.kt_bar, self.cell_population)
+			self.precomputed_mesh_parameters.mesh, field_predictor = DS3FE.update_environment(
+				self.precomputed_mesh_parameters,
+				field_predictor, self.boundary_conditions, self.fixed_flux,
+				self.initial_conditions, self.precomputed_mesh_parameters.inv_m05k,
+				self.kt_bar, self.cell_population)
+			xx = self.precomputed_mesh_parameters.mesh['glucose']
+			sxx = sum(xx)
+			#print(sum(self.precomputed_mesh_parameters.mesh['glucose']))
 			update_order = self.get_order(self.cell_population)  # order with which the cells are updated
 			n_cells = len(self.cell_population)
 			for o in update_order:
 				probability_vector = self.get_probabilities(self.cell_population[o], time,
-															self.precomputed_mesh_parameters.mesh, self.neighbours)
+															self.precomputed_mesh_parameters.mesh, self.precomputed_mesh_parameters.neighbours)
 				to_execute = self.choose_rule(probability_vector)
 				log = self.execute_rule(self.cell_population[o], to_execute, self.precomputed_mesh_parameters.mesh,
-										self.initial_conditions, self.neighbours, time)
+										self.initial_conditions, self.precomputed_mesh_parameters.neighbours, time)
 				if log['is_new_cell']:
 					self.cell_population.append(log['new_cell'])
 				if log['executed_rule'] == 'degradation':
 					self.cell_population.pop(o)
 			if len(self.cell_population) != n_cells:
-				self.precomputed_mesh_parameters.mesh = self.update_cells_position(self.precomputed_mesh_parameters.mesh,
-																				   self.cell_population)
-			self.update_tracking_variables(simulation_folder, self.base_name, time, self.precomputed_mesh_parameters.mesh,
+				self.precomputed_mesh_parameters.mesh = self.update_cells_position(
+					self.precomputed_mesh_parameters.mesh,
+					self.cell_population)
+			self.update_tracking_variables(simulation_folder, self.base_name, time,
+										   self.precomputed_mesh_parameters.mesh,
 										   self.cell_population)
 		self.save_output(simulation_folder, unit)
 
@@ -88,8 +97,6 @@ class ALISON:
 					mesh['cells'][ic] = 0
 		return mesh
 
-
-
 	@staticmethod
 	def is_occupied(cells, location):
 		out_variable = 0
@@ -104,7 +111,7 @@ class ALISON:
 		files = os.listdir(output_folder)
 		complete_simulation = {}
 		for f in files:
-			time = utility.convert_in_original_unit(int(f.split('=')[1].split('.pickle')[0]), unit)
+			time = utility.convert_in_original_unit(int(float(f.split('=')[1].split('.pickle')[0])), unit)
 			if time < 0:
 				time = 'initial_condition'
 			with open(output_folder + os.path.sep + f, 'rb') as F:
@@ -140,7 +147,7 @@ class ALISON:
 	def get_score(mesh, initial_condition, element):
 		s_glucose = mesh['glucose'][element] / initial_condition['glucose']
 		s_oxygen = mesh['oxygen'][element] / initial_condition['oxygen']
-		s_lactate = mesh['lactate'][element]/max(mesh['lactate'])
+		s_lactate = mesh['lactate'][element] / max(mesh['lactate'])
 		s_env = s_glucose + s_oxygen - s_lactate  # TODO check if it's ok
 		z_el = utility.get_centroid(mesh, element)[-1]
 		s_pos = (mesh.bounds[-2] + z_el) / (mesh.bounds[-1] - mesh.bounds[-2])
@@ -366,7 +373,7 @@ class ALISON:
 	@staticmethod
 	def initialize_outputs(initial_cell_population, mesh, base_name):
 		now = datetime.datetime.now()
-		folder_name = os.getcwd() + os.path.sep + 'outputs' + os.path.sep +now.strftime("%d%m%Y_%H:%M:%S") \
+		folder_name = os.getcwd() + os.path.sep + 'outputs' + os.path.sep + now.strftime("%d%m%Y_%H:%M:%S") \
 					  + '_current_simulation_' + base_name + os.path.sep
 		os.mkdir(folder_name)
 		file_name = now.strftime("%d_%m_%Y_%H:%M:%S") + '_current_simulation_' + base_name + '_T =-1.pickle'
@@ -388,6 +395,8 @@ class ALISON:
 				out.append(cells.Fibroblast(position, cell_configuration[cell_type], status))
 			elif 'mesothelial' in cell_type:
 				out.append(cells.MesothelialCell(position, cell_configuration[cell_type], status))
+			elif 'dummy' in cell_type:
+				out.append(cells.CancerCell(position, cell_configuration[cell_type], status))
 			else:
 				raise ValueError('unrecognized cell type')
 		return out
@@ -438,25 +447,6 @@ class ALISON:
 				id_cell = int(r.split('.')[0])
 				cell_name = r.split('.')[1].strip()
 				return id_cell, cell_name
-
-	@staticmethod
-	def get_neighbours(mesh, nodes_in_element):
-		output_variable = lil_array((mesh.n_faces, mesh.n_faces))
-		matrix_elements = ALISON.get_nodes_matrix(nodes_in_element)
-		for n in range(mesh.n_points):
-			elements = np.where(matrix_elements == n)[0]
-			combos = list(itertools.combinations(elements, 2))
-			for c in combos:
-				output_variable[c[0], c[1]] = 1
-				output_variable[c[1], c[0]] = 1
-		return output_variable
-
-	@staticmethod
-	def get_nodes_matrix(nds_els):
-		output_variable = np.zeros((len(nds_els), len(nds_els[0])))
-		for n in nds_els:
-			output_variable[n, :] = nds_els[n]
-		return output_variable
 
 	@staticmethod
 	def get_suitable_elements(mesh, configuration, layer):  # this is too slow

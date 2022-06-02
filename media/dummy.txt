@@ -1,2 +1,2 @@
-glucose -> 1 [g/ml]
+glucose -> 2 [g/ml]
 

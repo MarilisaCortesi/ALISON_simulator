@@ -1,7 +1,7 @@
 import mesh_configurator as mesh
 import dill
 
-base_name = 'tetgen_80K_elements'
+base_name = 'tetgen_small'
 
 precomputed_parameters = mesh.Mesh(base_name)
 file_out = precomputed_parameters.folder + base_name +'.pickle'

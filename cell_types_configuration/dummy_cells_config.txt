@@ -1,32 +1,16 @@
 Cancer cells configuration file
 
 states:
-1. dead
-2. quiescent
-3. proliferant
+1. live
 
 behaviour:
-1 -> 0, a*time_death
-2 -> 1, b*age + c/oxygen + d/glucose
-2 -> 3, c*oxygen + d*glucose
-3 -> 2, e*age + c/oxygen + d/glucose
-3 -> 3 + 3, f* time_since_last_division + c/oxygen + d/glucose
-3 -> 0 + 3, c/oxygen + d/glucose
 
 environment interaction:
-2 -> oxygen_consumption (g)
-2 -> glucose_consumption (h)
-2 -> lactate_production (h)
-3 -> oxygen_consumption (2*g)
-3 -> glucose_consumption (2*h)
-3 -> lactate_production (2*h)
+1 -> oxygen_consumption (a)
+1 -> glucose_consumption (b)
+1 -> lactate_production (c)
 
 parameters:
-a: 0.01
-b: 0.01
-c: 0.01
-d: 0.01
-e: 0.01
-f: 0.01
-g: 1e-10
-h: 1e-10
+a: 1e-10
+b: 1e-10
+c: 1e-10

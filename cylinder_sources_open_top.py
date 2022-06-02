@@ -39,26 +39,27 @@ def get_mesh_values(data_time):
 
 '''
 # run the simulation
-file_name = 'cylinder_sources_isolated.txt'
+file_name = 'cylinder_sources_open_top.txt'
 structure = ALISON.simulator.ALISON(file_name)
 structure.simulate()
+
+
 '''
-
-
 #analyse the data
 
-fileName = 'outputs/27052022_14:10:14_complete_simulation.pickle'
+fileName = 'outputs/27052022_16:04:17_complete_simulation.pickle'
 with open(fileName, 'rb') as F:
 	data = dill.load(F)
 time = get_time_points(list(data.keys()))
 reduced_time = [time[0], time[1], time[-1]]
 data_to_plot = []
-for t in reduced_time:
-	if t == -1:
-		key = 'initial_condition'
-	else:
-		key = t
-	data_to_plot.append(get_mesh_values(data[key]))
+for t in time:
+	if t % 100 == 0:
+		if t == -1:
+			key = 'initial_condition'
+		else:
+			key = t
+		data_to_plot.append(get_mesh_values(data[key]))
 
 f, ax = plt.subplots()
 ax.boxplot(data_to_plot)

@@ -37,23 +37,36 @@ def convert_in_hours(string):
 	# allowed measurement units: s, min, h, day/days
 	if 'day' in string:
 		conversion_factor = 24
-		duration = int(string.split('day')[0])
+		duration = float(string.split('day')[0])
 		unit = 'day'
 	elif 'h' in string:
 		conversion_factor = 1
-		duration = int(string.split('h')[0])
+		duration = float(string.split('h')[0])
 		unit = 'hour'
 	elif 'min' in string:
 		conversion_factor = 60
-		duration = int(string.split('min')[0])
+		duration = float(string.split('min')[0])
 		unit = 'minute'
 	elif 's' in string:
 		conversion_factor = 3600
-		duration = int(string.split('s')[0])
+		duration = float(string.split('s')[0])
 		unit = 'second'
 	else:
 		raise ValueError('Unrecognized time unit. Please refer to the documentation for further details.')
 	return duration * conversion_factor, unit
+
+
+def contains_time_unit(unit):
+	if 's' in unit:
+		return 1, 's'
+	elif 'min' in unit:
+		return 1, 'min'
+	elif 'h' in unit:
+		return 1, 'h'
+	elif 'day' in unit:
+		return 1, 'day'
+	else:
+		return 0, 'N/A'
 
 
 def convert_in_original_unit(amount, unit):
