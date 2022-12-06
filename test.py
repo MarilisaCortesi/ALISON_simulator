@@ -7,7 +7,7 @@ file_in = 'meshes/tetgen_80K_elements/tetgen_80K_elements_OG.pickle'
 with open(file_in, 'rb') as F:
 	struct = dill.load(F)
 [u, s, vh] = scipy.linalg.svd(struct.m.todense())
-dill.dump_session('test.pickle')
+dill.dump_session('cylinder_sources_sinks.pickle')
 '''
 
 file = 'test.pickle'

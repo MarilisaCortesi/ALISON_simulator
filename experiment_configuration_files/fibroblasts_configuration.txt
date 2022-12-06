@@ -1,11 +1,11 @@
 # Main configuration file
 
 organotypic model:
-experimental model -> cylinder_sources_open_top.txt
+experimental model -> Peters_2015_fibroblasts_only.txt
 
 experimental conditions:
-duration -> 100 h
+duration -> 72 h
 resolution -> 1 h
-media -> dummy
+media -> RPMI
 oxygen -> standard
 treatment -> none

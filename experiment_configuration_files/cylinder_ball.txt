@@ -4,7 +4,7 @@ organotypic model:
 experimental model -> cylinder_center_source.txt
 
 experimental conditions:
-duration -> 1000 h
+duration -> 72 h
 resolution -> 1 h
 media -> dummy
 oxygen -> standard

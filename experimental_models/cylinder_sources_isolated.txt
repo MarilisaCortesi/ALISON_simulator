@@ -1,5 +1,5 @@
 mesh:
-name -> tetgen_small
+name -> cylinder_sources_sinks_small
 
 cells:
 dummy -> dummy_cells_config.txt, 400, live, all layers

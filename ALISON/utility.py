@@ -1,5 +1,77 @@
+import os
+import datetime
 import numpy as np
+import itertools
 
+def print_file(file_in, new_pars, file_out):
+	temp = {}
+	with open(os.getcwd() + '/cell_types_configuration/' + file_in, 'r') as f:
+		for ir, r in enumerate(f.readlines()):
+			if 'opt' in r:
+				par_name = r.split(':')[0]
+				par_value = new_pars[par_name]
+				new_r = r.split('opt')[0] + str(par_value)+ r.split('opt')[1]
+				temp[ir] = new_r
+			else:
+				temp[ir] = r
+	with open(os.getcwd() + '/cell_types_configuration/' + file_out, 'w') as f:
+		for t in sorted(list(temp.keys())):
+			f.write(temp[t])
+
+def get_next_combination(combinations, current_set):
+	k = sorted(list(current_set.keys()))
+	temp = tuple([current_set[x] for x in k])
+	for cc, c in enumerate(combinations):
+		if c == temp:
+			idx = cc
+			break
+	if idx < len(combinations):
+		return combinations[idx+1]
+	else:
+		return -1
+
+def get_configuration(cfile, par_list, current_set={}):
+	to_optimize= []
+	flag = 0
+	with open(os.getcwd()+'/cell_types_configuration/'+ cfile, 'r') as F:
+		for r in F.readlines():
+			if flag:
+				if 'opt' in r:
+					to_optimize.append(r.split(':')[0])
+			if 'parameters' in r:
+				flag = 1
+	if len(current_set) == 0:
+		out = {}
+		for t in to_optimize:
+			out[t] = par_list[0]
+	else:
+		combinations = itertools.combinations_with_replacement(par_list, len(to_optimize))
+		next_set = get_next_combination(list(combinations), current_set)
+		if next_set != -1:
+			out = {}
+			for it, t in enumerate(to_optimize):
+				out[t] = next_set[it]
+		else:
+			out = -1
+	return out
+
+
+
+
+def get_current_folder(otpts):
+	now = datetime.datetime.now()
+	deltas = []
+	for o in otpts:
+		if not o.startswith('.'):
+			day = int(o[0:2])
+			month = int(o[2:4])
+			year = int(o[4:8])
+			h = int(o.split('_')[1].split(':')[0])
+			m = int(o.split(':')[1])
+			s = int(o.split(':')[2].split('_')[0])
+			dt = datetime.datetime(day=day, month=month, year=year, hour=h, minute=m, second=s)
+			deltas.append(now-dt)
+	return otpts[np.argmin(deltas)]
 
 def get_new_key(current_dict):
 	# function that counts the number of keys in dictionary and returns the max+1

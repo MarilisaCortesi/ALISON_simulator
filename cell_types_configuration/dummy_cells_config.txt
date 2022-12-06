@@ -11,6 +11,6 @@ environment interaction:
 1 -> lactate_production (c)
 
 parameters:
-a: 1e-10
-b: 1e-10
-c: 1e-10
+a: 1e-5
+b: 1e-5
+c: 1e-5

@@ -32,22 +32,19 @@ def get_mesh_values(data_time):
 	mesh = data_time['mesh']
 	out = []
 	print(sum(mesh['glucose']))
-	for g in mesh['glucose']:
-		if g > 0:
-			out.append(g)
+	for g in mesh['oxygen']:
+		out.append(g)
 	return out
-
-
+'''
 # run the simulation
 file_name = 'cylinder_sources_isolated.txt'
 structure = ALISON.simulator.ALISON(file_name)
 structure.simulate()
 
-
-
-#analyse the data
 '''
-fileName = 'outputs/27052022_14:10:14_complete_simulation.pickle'
+#analyse the data
+
+fileName = 'outputs/03082022_13:52:17_complete_simulation.pickle'
 with open(fileName, 'rb') as F:
 	data = dill.load(F)
 time = get_time_points(list(data.keys()))
@@ -63,4 +60,3 @@ for t in reduced_time:
 f, ax = plt.subplots()
 ax.boxplot(data_to_plot)
 plt.show()
-'''
