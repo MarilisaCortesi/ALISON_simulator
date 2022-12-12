@@ -1,0 +1,16 @@
+Cancer cells configuration file
+
+states:
+1. live
+
+behaviour:
+
+environment interaction:
+1 -> oxygen_consumption (a)
+1 -> glucose_consumption (b)
+1 -> lactate_production (c)
+
+parameters:
+a: 1e-5
+b: 1e-5
+c: 1e-5

@@ -1,0 +1,7 @@
+mesh:
+name -> tetgen_small
+
+boundary conditions:
+fixed flux -> top, bottom, side
+
+

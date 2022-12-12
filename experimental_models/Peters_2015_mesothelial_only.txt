@@ -8,8 +8,8 @@ resolution -> 81.1
 # this resolution value yields a mesh with ~ 80K nodes (use 44.7 for 80K elements)
 
 cells:
-fibroblasts -> fibroblast_cells_config.txt, 4000, healthy, bottom layer
 mesothelial -> mesothelial_cells_config.txt, 20000, healthy, middle layer
+
 
 layers:
 bottom layer -> 0,50

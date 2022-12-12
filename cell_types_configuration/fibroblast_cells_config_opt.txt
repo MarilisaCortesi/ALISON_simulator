@@ -1,0 +1,33 @@
+Fibroblasts configuration file
+
+states:
+1. dead
+2. healthy
+3. cancer_associated
+
+behaviour:
+1 -> 0, a*time_death
+2 -> 3, b*local_proliferative_cancer + g*time_since_cancer_in_neighbourhood
+2 -> 1, e*age + c/oxygen + d/glucose + f*lactate
+2 -> 2 + 2, h* time_since_last_division + c/oxygen + d/glucose +f*lactate
+3 -> 1, e*age + c/oxygen + d/glucose + f*lactate
+3 -> 3 + 3, h* time_since_last_division + c/oxygen + d/glucose +f*lactate
+
+
+environment interaction:
+2 -> oxygen_consumption (g)
+2 -> glucose_consumption (h)
+2 -> lactate_production (h)
+3 -> oxygen_consumption (g)
+3 -> glucose_consumption (h)
+3 -> lactate_production (h)
+
+parameters:
+a: opt
+b: opt
+c: opt
+d: opt
+e: opt
+f: opt
+g: 1e-6
+h: 1e-6

@@ -92,6 +92,7 @@ class Fibroblast(Cell):
 		super().__init__(position)
 		self.allowed_layers = 'fibroblasts'
 		self.type = 'fibroblasts'
+		self.time_since_cancer_in_neighbourhood = 0 #TODO: this hypothesizes that no cancer cells are in the matrix at T = 0. Evaluate adding a check to make sure
 		self.configuration = configuration
 		if type(status) == int:
 			self.status = status

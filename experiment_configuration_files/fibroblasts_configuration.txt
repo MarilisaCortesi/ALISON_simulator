@@ -1,13 +1,10 @@
 # Main configuration file
 
 organotypic model:
-experimental model -> Peters_2015.txt
-
-cells:
-cancer -> cancer_cells_config.txt, 4000, proliferant, top layer
+experimental model -> Peters_2015_fibroblasts_only.txt
 
 experimental conditions:
-duration -> 12 h
+duration -> 72 h
 resolution -> 1 h
 media -> RPMI
 oxygen -> standard

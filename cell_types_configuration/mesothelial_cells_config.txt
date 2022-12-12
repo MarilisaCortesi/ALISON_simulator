@@ -6,18 +6,20 @@ states:
 
 behaviour:
 1 -> 0, a*time_death
-2 -> 1, b*age + c/oxygen + d/glucose
+2 -> 1, b*age + c/oxygen + d/glucose + e*lactate
 
 
 environment interaction:
-2 -> oxygen_consumption (e)
-2 -> glucose_consumption (f)
-2 -> lactate_production (f)
+2 -> oxygen_consumption (f)
+2 -> glucose_consumption (g)
+2 -> lactate_production (h)
 
 parameters:
 a: 0.01
 b: 0.01
 c: 0.01
 d: 0.01
-e: 1e-10
-f: 1e-10
+e: 0.01
+f: 1e-6
+g: 1e-6
+h: 1e-6

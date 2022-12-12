@@ -1,0 +1,11 @@
+# Main configuration file
+
+organotypic model:
+experimental model -> cylinder_center_source.txt
+
+experimental conditions:
+duration -> 72 h
+resolution -> 1 h
+media -> dummy
+oxygen -> standard
+treatment -> none
