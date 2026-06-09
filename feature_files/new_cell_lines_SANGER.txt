@@ -1,0 +1,81 @@
+# Calibration file for the HGSOC cell lines GDSC Sanger dataset
+
+FU-OV-1:
+
+Recurrence: yes (not known)
+Known drug resistance: not known
+BRCA status: WT
+other mutations: CCNE1_amp
+doubling time [h]: 21
+
+JHOS-2:
+
+Recurrence: no
+Known drug resistance: yes (platinum)
+BRCA status: WT
+other mutations: HGNC
+doubling time [h]: 61
+
+JHOS-4:
+
+Recurrence: not known
+Known drug resistance: no
+BRCA status: WT
+other mutations: HGNC
+doubling time [h]: 70
+
+KURAMOCHI:
+
+Recurrence: not known
+Known drug resistance: no
+BRCA status: BRCA2
+other mutations: HGNC
+doubling time [h]: 26
+
+OV90:
+
+Recurrence: not known
+Known drug resistance: no
+BRCA status: WT
+other mutations: HGNC
+doubling time [h]: 40
+
+OVCA420:
+
+Recurrence: not known
+Known drug resistance: no
+BRCA status: WT
+other mutations: HGNC
+doubling time [h]: 48
+
+OVCAR3:
+
+Recurrence: not known
+Known drug resistance: yes (platinum)
+BRCA status: WT
+other mutations: HGNC, PIK3R1
+doubling time [h]: 48
+
+OVCAR8:
+
+Recurrence: not known
+Known drug resistance: no
+BRCA status: WT
+other mutations: HGNC, CTNNB1, ERBB2, KRAS
+doubling time [h]: 25
+
+OVKATE:
+
+Recurrence: not known
+Known drug resistance: yes (platinum)
+BRCA status: WT
+other mutations: HGNC, MTOR
+doubling time [h]: 96
+
+UWB1.289:
+
+Recurrence: yes (not known)
+Known drug resistance: yes (platinum, PARPi)
+BRCA status: BRCA1
+other mutations: HGNC
+doubling time [h]: 15

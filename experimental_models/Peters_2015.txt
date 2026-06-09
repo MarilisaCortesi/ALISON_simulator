@@ -4,12 +4,12 @@
 # can be adjusted (in the main configuration file).
 
 mesh:
-resolution -> 81.1
-# this resolution value yields a mesh with ~ 80K nodes (use 44.7 for 80K elements)
+name -> organotypic_model.xdmf
+scale factor -> 10
 
 cells:
-fibroblasts -> fibroblast_cells_config.txt, 4000, healthy, bottom layer
-mesothelial -> mesothelial_cells_config.txt, 20000, healthy, middle layer
+fibroblasts -> opt_fibroblast_cells_config.txt, 5000, healthy, bottom layer
+mesothelial -> opt_mesothelial_cells_config.txt, 20000, healthy, middle layer
 
 layers:
 bottom layer -> 0,50
@@ -21,10 +21,10 @@ fixed value -> top
 fixed flux -> bottom, side
 
 material parameters:
-# mass density of the structure [g/mm3]
-rho -> 0.001
+# mass density of the structure [mg/mm3]
+rho -> 1
 # heat capacity i.e. amount of energy needed to change the temperature by one point. The reasoning behind this value is in notebook 2
 cv -> 1
-# thermal conductivity. Average of measured value in collagen gel. See notebook 2
-k -> 1.65e-6
+# thermal conductivity. Average of measured value in collagen gel. See notebook 2 [mm^2/h]
+k -> 0.594
 

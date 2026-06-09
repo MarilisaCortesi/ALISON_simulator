@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import itertools
 
+
 def print_file(file_in, new_pars, file_out):
 	temp = {}
 	with open(os.getcwd() + '/cell_types_configuration/' + file_in, 'r') as f:
@@ -10,13 +11,14 @@ def print_file(file_in, new_pars, file_out):
 			if 'opt' in r:
 				par_name = r.split(':')[0]
 				par_value = new_pars[par_name]
-				new_r = r.split('opt')[0] + str(par_value)+ r.split('opt')[1]
+				new_r = r.split('opt')[0] + str(par_value) + r.split('opt')[1]
 				temp[ir] = new_r
 			else:
 				temp[ir] = r
 	with open(os.getcwd() + '/cell_types_configuration/' + file_out, 'w') as f:
 		for t in sorted(list(temp.keys())):
 			f.write(temp[t])
+
 
 def get_next_combination(combinations, current_set):
 	k = sorted(list(current_set.keys()))
@@ -25,15 +27,16 @@ def get_next_combination(combinations, current_set):
 		if c == temp:
 			idx = cc
 			break
-	if idx < len(combinations):
-		return combinations[idx+1]
+	if idx < len(combinations) - 1:
+		return combinations[idx + 1]
 	else:
 		return -1
 
+
 def get_configuration(cfile, par_list, current_set={}):
-	to_optimize= []
+	to_optimize = []
 	flag = 0
-	with open(os.getcwd()+'/cell_types_configuration/'+ cfile, 'r') as F:
+	with open(os.getcwd() + '/cell_types_configuration/' + cfile, 'r') as F:
 		for r in F.readlines():
 			if flag:
 				if 'opt' in r:
@@ -56,8 +59,6 @@ def get_configuration(cfile, par_list, current_set={}):
 	return out
 
 
-
-
 def get_current_folder(otpts):
 	now = datetime.datetime.now()
 	deltas = []
@@ -70,8 +71,9 @@ def get_current_folder(otpts):
 			m = int(o.split(':')[1])
 			s = int(o.split(':')[2].split('_')[0])
 			dt = datetime.datetime(day=day, month=month, year=year, hour=h, minute=m, second=s)
-			deltas.append(now-dt)
+			deltas.append(now - dt)
 	return otpts[np.argmin(deltas)]
+
 
 def get_new_key(current_dict):
 	# function that counts the number of keys in dictionary and returns the max+1
@@ -105,75 +107,153 @@ def engineering_notation(string_value):
 			raise ValueError('unrecognized metric prefix')
 
 
+'''
+def convert_in_unit(value, start_unit, end_unit):
+        if 'h' in end_unit:
+                result, _ = convert_in_hours(str(value)+ start_unit)
+        elif 'day' in end_unit:
+                result, _ = convert_in_days(str(value) + start_unit)
+        elif 'min' in end_unit:
+                result, _ = convert_in_minutes(str(value) + start_unit)
+        elif 's' in end_unit:
+                result, _ = convert_in_seconds(str(value) + start_unit)
+        else:
+                raise ValueError('Unrecognized time unit')
+        return result
+
+def convert_in_minutes(str_value):
+        if 'day' in str_value:
+                conversion_factor = 1/1440
+                duration = float(str_value.split('day')[0])
+                unit = 'day'
+        elif 'h' in str_value:
+                conversion_factor = 1/60
+                duration = float(str_value.split('h')[0])
+                unit = 'hour'
+        elif 'min' in str_value:
+                conversion_factor = 1
+                duration = float(str_value.split('min')[0])
+                unit = 'minute'
+        elif 's' in str_value:
+                conversion_factor = 60
+                duration = float(str_value.split('s')[0])
+                unit = 'second'
+        else:
+                raise ValueError('Unrecognized time unit. Please refer to the documentation for further details.')
+        return duration * conversion_factor, unit
+
+
+def convert_in_seconds(str_value):
+        if 'day' in str_value:
+                conversion_factor = 1/86400
+                duration = float(str_value.split('day')[0])
+                unit = 'day'
+        elif 'h' in str_value:
+                conversion_factor = 1/3600
+                duration = float(str_value.split('h')[0])
+                unit = 'hour'
+        elif 'min' in str_value:
+                conversion_factor = 1/60
+                duration = float(str_value.split('min')[0])
+                unit = 'minute'
+        elif 's' in str_value:
+                conversion_factor = 1
+                duration = float(str_value.split('s')[0])
+                unit = 'second'
+        else:
+                raise ValueError('Unrecognized time unit. Please refer to the documentation for further details.')
+        return duration * conversion_factor, unit
+def convert_in_days(str_value):
+        if 'day' in str_value:
+                conversion_factor = 1
+                duration = float(str_value.split('day')[0])
+                unit = 'day'
+        elif 'h' in str_value:
+                conversion_factor = 24
+                duration = float(str_value.split('h')[0])
+                unit = 'hour'
+        elif 'min' in str_value:
+                conversion_factor = 1440
+                duration = float(str_value.split('min')[0])
+                unit = 'minute'
+        elif 's' in str_value:
+                conversion_factor = 86400
+                duration = float(str_value.split('s')[0])
+                unit = 'second'
+        else:
+                raise ValueError('Unrecognized time unit. Please refer to the documentation for further details.')
+        return duration * conversion_factor, unit
 def convert_in_hours(string):
-	# allowed measurement units: s, min, h, day/days
-	if 'day' in string:
-		conversion_factor = 24
-		duration = float(string.split('day')[0])
-		unit = 'day'
-	elif 'h' in string:
-		conversion_factor = 1
-		duration = float(string.split('h')[0])
-		unit = 'hour'
-	elif 'min' in string:
-		conversion_factor = 60
-		duration = float(string.split('min')[0])
-		unit = 'minute'
-	elif 's' in string:
-		conversion_factor = 3600
-		duration = float(string.split('s')[0])
-		unit = 'second'
-	else:
-		raise ValueError('Unrecognized time unit. Please refer to the documentation for further details.')
-	return duration * conversion_factor, unit
+        # allowed measurement units: s, min, h, day/days
+        if 'day' in string:
+                conversion_factor = 1/24
+                duration = float(string.split('day')[0])
+                unit = 'day'
+        elif 'h' in string:
+                conversion_factor = 1
+                duration = float(string.split('h')[0])
+                unit = 'hour'
+        elif 'min' in string:
+                conversion_factor = 60
+                duration = float(string.split('min')[0])
+                unit = 'minute'
+        elif 's' in string:
+                conversion_factor = 3600
+                duration = float(string.split('s')[0])
+                unit = 'second'
+        else:
+                raise ValueError('Unrecognized time unit. Please refer to the documentation for further details.')
+        return duration * conversion_factor, unit
 
 
 def contains_time_unit(unit):
-	if 's' in unit:
-		return 1, 's'
-	elif 'min' in unit:
-		return 1, 'min'
-	elif 'h' in unit:
-		return 1, 'h'
-	elif 'day' in unit:
-		return 1, 'day'
-	else:
-		return 0, 'N/A'
+        if 's' in unit:
+                return 1, 's'
+        elif 'min' in unit:
+                return 1, 'min'
+        elif 'h' in unit:
+                return 1, 'h'
+        elif 'day' in unit:
+                return 1, 'day'
+        else:
+                return 0, 'N/A'
 
 
 def convert_in_original_unit(amount, unit):
-	if unit == 'day':
-		return amount / 24
-	elif unit == 'hour':
-		return amount
-	elif unit == 'minute':
-		return amount * 60
-	elif unit == 'second':
-		return amount * 3600
-	else:
-		raise ValueError('Unrecognized measurement unit')
+        if unit == 'day':
+                return amount / 24
+        elif unit == 'hour':
+                return amount
+        elif unit == 'minute':
+                return amount * 60
+        elif unit == 'second':
+                return amount * 3600
+        else:
+                raise ValueError('Unrecognized measurement unit')
 
 
 def update_measurement_unit(cell_population, unit):
-	for c in cell_population:
-		if unit == 'day':
-			c.age /= 24
-			c.time_since_last_division /= 24
-			if c.time_death is not None:
-				c.time_death /= 24
-		elif unit == 'hour':
-			continue
-		elif unit == 'minute':
-			c.age *= 60
-			c.time_since_last_division *= 60
-			if c.time_death is not None:
-				c.time_death *= 60
-		elif unit == 'seconds':
-			c.age *= 3600
-			c.time_since_last_division *= 3600
-			if c.time_death is not None:
-				c.time_death *= 3600
-	return cell_population
+        for c in cell_population:
+                if unit == 'day':
+                        c.age /= 24
+                        c.time_since_last_division /= 24
+                        if c.time_death is not None:
+                                c.time_death /= 24
+                elif unit == 'hour':
+                        continue
+                elif unit == 'minute':
+                        c.age *= 60
+                        c.time_since_last_division *= 60
+                        if c.time_death is not None:
+                                c.time_death *= 60
+                elif unit == 'seconds':
+                        c.age *= 3600
+                        c.time_since_last_division *= 3600
+                        if c.time_death is not None:
+                                c.time_death *= 3600
+        return cell_population
+
+'''
 
 
 def get_centroid(mesh, id_el):
@@ -184,8 +264,8 @@ def get_centroid(mesh, id_el):
 	return np.mean(np.array(mesh.points[nodes, :]), axis=0)
 
 
-def solve_equation(equation,cell):
-	operations = ['*', '/', '+', '-'] # this might not work for complex eqs.
+def solve_equation(equation, parameters):
+	operations = ['*', '/', '+', '-']  # this might not work for complex eqs.
 	for o in operations:
 		if o in equation:
 			temp = equation.split(o)
@@ -194,16 +274,28 @@ def solve_equation(equation,cell):
 			try:
 				op1 = float(temp[0])
 			except ValueError:
-				op1 = cell.parameters[temp[0]]
+				op1 = parameters[temp[0]]
 			try:
 				op2 = float(temp[1])
 			except ValueError:
-				op2 = cell.parameters[temp[1]]
+				op2 = parameters[temp[1]]
 			if o == '*':
 				return op1 * op2
 			elif o == '/':
-				return op1/op2
+				return op1 / op2
 			elif o == '+':
-				return op1+op2
+				return op1 + op2
 			else:
-				return op1- op2
+				return op1 - op2
+
+
+def sigmoid(dlevel, features, drug_name):
+	n = 5
+	num = 1
+	den1 = 1
+	mesh_size = features['mesh elements']
+	if drug_name == 'drug':
+		den2 = ((features[drug_name]['IC50 [M]'] / mesh_size) / dlevel) ** n
+	else:
+		den2 = ((features['drug'][drug_name]['IC50 [M]'] / mesh_size) / dlevel) ** n
+	return num / (den1 + den2)

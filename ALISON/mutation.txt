@@ -1,0 +1,5 @@
+# list of known mutations in HGSOC and their effect
+Mutation    Effect
+CCNE1 overexpression -> poor prognosis
+NF1 -> poor prognosis
+

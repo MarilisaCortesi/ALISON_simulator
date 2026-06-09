@@ -1,0 +1,33 @@
+Cancer cells configuration file
+
+states:
+1. dead
+2. quiescent
+3. proliferative
+
+behaviour:
+1 -> 0, a*time_death
+2 -> 1, e*age -b*oxygen -c*glucose + d*lactate
+2 -> 3, b*oxygen + c*glucose -d*lactate - e*age
+3 -> 2, e*age -b*oxygen -c*glucose  + d*lactate
+3 -> 3 + 3, f* time_since_last_division -b*oxygen -c*glucose + d*lactate+ g*local_cancer_associated_fibroblasts
+3 -> 0 + 3, b*oxygen + c*glucose -d*lactate-e*age
+
+environment interaction:
+2 -> oxygen_consumption (h)
+2 -> glucose_consumption (i)
+2 -> lactate_production (i)
+3 -> oxygen_consumption (2*h)
+3 -> glucose_consumption (2*i)
+3 -> lactate_production (2*i)
+
+parameters:
+a: 0.6454629014434887
+b: 0.882841111311872
+c: 0.07730768448924158
+d: 0.9934825589867277
+e: 0.754411982742394
+f: 0.5423179598977917
+g: 0.9852539763205972
+h: 0.288e-12 #g/cell*h
+i: 17.64e-6 #g/cell*h

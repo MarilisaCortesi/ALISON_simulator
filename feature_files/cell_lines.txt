@@ -1,0 +1,43 @@
+# Calibration file for the HGSOC cell lines
+
+PEO1:
+
+Recurrence: yes (1)
+Known drug resistance: no
+BRCA status: BRCA2
+other mutations: no
+
+PEO4:
+
+Recurrence: yes (2)
+Known drug resistance: yes (platinum)
+BRCA status: WT (reversion)
+other mutations: NF1
+
+CaOV3:
+
+Recurrence: no
+Known drug resistance: no
+BRCA status: WT
+other mutations: no
+
+OVCAR4:
+
+Recurrence: not known
+Known drug resistance: yes (multidrug)
+BRCA status: WT
+other mutations: no
+
+OAW28:
+
+Recurrence: yes (not known)
+Known drug resistance: yes (platinum)
+BRCA status: WT
+other mutations: no
+
+OVSAHO:
+
+Recurrence: not known
+Known drug resistance: no
+BRCA status: WT
+other mutations: no
