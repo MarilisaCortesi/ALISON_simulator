@@ -24,6 +24,7 @@ class ALISON:
 		self.experiment_configuration, self.structure_configuration, self.cells_configuration = \
 			self.read_main_configuration_file(full_path_configuration)
 		self.update_scaling()
+		self.update_timescale()
 		self.mesh = DS3FE.initialise_mesh(self.structure_configuration['name'])
 		if 'none' not in self.experiment_configuration['treatment']:
 			self.experiment_configuration['treatment']['mesh elements'] = self.mesh.num_cells()
@@ -53,6 +54,30 @@ class ALISON:
 		self.f = DS3FE.initialise_f(self.mesh, self.initial_conditions, self.cell_population,
 									self.function_space)
 		self.fields = DS3FE.initialise_fields(self.initial_conditions, self.function_space)
+
+
+	def update_timescale(self):
+		t_res = int(self.experiment_configuration['step'].split('h')[0])
+		self.structure_configuration['k'] = str(float(self.structure_configuration['k'])*t_res) #Thermal conductivity
+		'''
+		for c in self.cells_configuration:
+			rates = []
+			for e in self.cells_configuration[c]['environment interaction']:
+				rt = self.cells_configuration[c]['environment interaction'][e]['rate']
+				if '*' in rt:
+					rt = rt.split('*')[1]
+				if rt not  in rates:
+					rates.append(rt)
+			for r in rates:
+				if type(self.cells_configuration[c]['parameters'][r]) == list:
+					self.cells_configuration[c]['parameters'][r][0] = self.cells_configuration[c]['parameters'][r][0]*t_res
+					self.cells_configuration[c]['parameters'][r][1] = 'timestep'
+				elif type(self.cells_configuration[c]['parameters'][r]) == float:
+					self.cells_configuration[c]['parameters'][r] = self.cells_configuration[c]['parameters'][r] * t_res
+				else:
+					raise ValueError('unrecognised parameter value')
+			'''
+
 
 	def update_scaling(self):
 		scale_factor = float(self.structure_configuration['scale factor'])
@@ -119,46 +144,48 @@ class ALISON:
 						   self.fields[f] + diffusion_coefficient * self.f[f]) * test_function * dx
 			a[f], L[f] = fenics.lhs(F[f]), fenics.rhs(F[f])
 		t = 0
-		iterations = int(self.experiment_configuration['duration'].split(' ')[0])
+		step = int(self.experiment_configuration['step'].split(' ')[0])
+		total_duration = int(self.experiment_configuration['duration'].split(' ')[0])
+		iterations = int(total_duration/step)
 		for n in range(iterations):
-			t += 1
+			t +=step
 			trial_function_e = {}
 			for v in F:
 				trial_function = fenics.Function(self.function_space)
 				fenics.solve(a[v] == L[v], trial_function, self.boundary_conditions[v])
 				trial_function_e[v] = fenics.interpolate(trial_function, self.function_space)
 				self.fields[v].assign(trial_function)
-
 			ALISON.reset_update_status(self.cell_population)
 			for oo in tqdm.tqdm(range(len(self.cell_population))):
 				idx_cell = ALISON.pick_one(self.cell_population)
 				o = self.cell_population[idx_cell]
-				if o.type == 'fibroblasts':
-					check_neighbourhood = self.get_local(self.cell_population, o, 'cancer', 'proliferative',
+				for r in range(step):
+					if o.type == 'fibroblasts':
+						check_neighbourhood = self.get_local(self.cell_population, o, 'cancer', 'proliferative',
 														 self.neighbours)
-					if check_neighbourhood > 0:
-						o.time_since_cancer_in_neighbourhood += 1
-					else:
-						if o.time_since_cancer_in_neighbourhood > 0:
-							o.time_since_cancer_in_neighbourhood -= 1  # if all the cancer cells are
+						if check_neighbourhood > 0:
+							o.time_since_cancer_in_neighbourhood += 1
+						else:
+							if o.time_since_cancer_in_neighbourhood > 0:
+								o.time_since_cancer_in_neighbourhood -= 1  # if all the cancer cells are
 					# gone from the fibroblast's neighbourhood its likelihood of becoming an activated CAF drops
 
-				probability_vector = self.get_probabilities(o, t, self.fields, self.neighbours, self.cell_population,
-															self.experiment_configuration['treatment'], iterations)
+					probability_vector = self.get_probabilities(o, t, self.fields, self.neighbours, self.cell_population,
+															self.experiment_configuration['treatment'], total_duration)
 
-				to_execute = self.choose_rule(probability_vector)
-				log = self.execute_rule(o, to_execute, self.mesh, self.initial_conditions, self.neighbours, t,
+					to_execute = self.choose_rule(probability_vector)
+					log, self.cell_population = self.execute_rule(o, to_execute, self.mesh, self.initial_conditions, self.neighbours, t, step-r,
 										self.cell_population, self.fields)
 
-				# if o.type =='cancer':
-				#    print(o.type,o.status, probability_vector, log)
-				if o.update_status == 0:
-					print(log)
-					raise ValueError('something wrong with the update')
-				if log['is_new_cell']:
-					self.cell_population.append(log['new_cell'])
-				if log['executed_rule'] == 'degradation':
-					self.cell_population.pop(idx_cell)
+					#if o.type =='cancer':
+					#	print(o.type,o.status, probability_vector, log)
+					if o.update_status == 0:
+						print(log)
+						raise ValueError('something wrong with the update')
+					if log['is_new_cell']:
+						self.cell_population.append(log['new_cell'])
+					if log['executed_rule'] == 'degradation':
+						self.cell_population.pop(idx_cell)
 
 			self.update_tracking_variables(simulation_folder, self.base_name, t,
 										   self.fields,
@@ -289,7 +316,7 @@ class ALISON:
 
 	@staticmethod
 	# function that executes the chosen rule.
-	def execute_rule(cell, te, mesh, initial_condition, neighbours, iteration, cell_population, fields):
+	def execute_rule(cell, te, mesh, initial_condition, neighbours, iteration, substep, cell_population, fields):
 		output_variable = {}
 		try:
 			chosen_rule = list(cell.rules['current_rules']['behaviour'])[te]
@@ -342,7 +369,7 @@ class ALISON:
 					output_variable['executed_rule'] = 'transition_to_other_state'
 					output_variable['is_new_cell'] = 0
 					cell.transition(result, iteration)
-		return output_variable
+		return output_variable, cell_population
 
 	@staticmethod
 	def execute_side_effect(cell_pop, loc, what, mesh, initial_conditions, neighbours, fields):
@@ -394,7 +421,7 @@ class ALISON:
 					cpop1 += 1
 				elif c.status == 3:
 					cpop2 += 1
-		print(time, cpop1, cpop2, mpop, fpop1, fpop2)
+		#print(time, cpop1, cpop2, mpop, fpop1, fpop2)
 		with open(simulation_folder + file_name, 'wb') as f:
 			pickle.dump([fields_out, cell_population], f)
 
@@ -428,6 +455,7 @@ class ALISON:
 	def get_probabilities(cll, t, fields, neighbours, cell_population, drug_characteristics, iterations):
 		# function that gets the probability of a rule
 		out = []
+		#print('actual time', t)
 		for r in sorted(cll.rules['current_rules']['behaviour']):
 			if type(cll.rules['current_rules']['behaviour'][r]['end']) == list:
 				eligible = ALISON.check_eligibility(neighbours[cll.location], cell_population, cll.type)
@@ -439,7 +467,7 @@ class ALISON:
 			else:
 				value = ALISON.get_value(cll, r, t, fields, cell_population, neighbours, drug_characteristics,
 										 iterations)
-			# print('aa',cll.type, cll.rules['current_rules']['behaviour'][r], value)
+				#print('aa',cll.type, cll.rules['current_rules']['behaviour'][r], value)
 			if value < 0:
 				value = 0.0
 			out.append(value)
@@ -574,7 +602,7 @@ class ALISON:
 					if 'oxygen' in opr:
 						o2_field = fields['oxygen'].vector().get_local()
 						max_o2 = max(o2_field)
-						# print(o2_field[cll.location]/max_o2, 'o2')
+						#print(o2_field[cll.location]/max_o2, 'o2')
 						if o2_field[cll.location] < 0:
 							return 0
 						else:
@@ -582,7 +610,7 @@ class ALISON:
 					if 'glucose' in opr:
 						glu_field = fields['glucose'].vector().get_local()
 						max_glu = max(glu_field)
-						# print(glu_field[cll.location]/max_glu, 'glu')
+						#print(glu_field[cll.location], max_glu, 'glu')
 						if glu_field[cll.location] < 0:
 							return 0
 						else:
@@ -590,6 +618,7 @@ class ALISON:
 					if 'lactate' in opr:
 						lactate_field = fields['lactate'].vector().get_local()
 						max_lact = max(lactate_field)
+						#print('lactate', lactate_field[cll.location])
 						return lactate_field[cll.location] / max_lact
 
 					if 'local' in opr:
@@ -608,7 +637,6 @@ class ALISON:
 				  distance=0.1):  # the range of paracrine signals has been estimated to 100 um (Handly et al 2015)
 		out = 0
 		distance_from_cell = neighbours[cell.location]['distance']
-		# print(len(cell_pop))
 		total = 0
 		for c in cell_pop:
 			if distance_from_cell[c.location] <= distance:
@@ -616,7 +644,10 @@ class ALISON:
 				if which_cell in c.type:
 					if ALISON.does_it_count(c, which_status):
 						out += 1
-		return out / total
+		if total>0:
+			return out / total
+		else:
+			return 0
 
 	@staticmethod
 	def check_neighbour(n_id, cpop, whch_cll, which_status):

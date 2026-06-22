@@ -213,6 +213,7 @@ class CancerCell(Cell):
 			self.status = status
 		else:
 			self.status = self.get_status(configuration, status)
+		#print('status', self.status)
 		self.rules, self.parameters = self.get_rules(configuration, self.status)
 
 

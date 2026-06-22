@@ -4,10 +4,11 @@ organotypic model:
 experimental model -> Peters_2015.txt
 
 cells:
-cancer -> PEO1_cancer_cells_config.txt, 4000, proliferant, top layer
+cancer -> PEO1_cancer_cells_config.txt, 4000, proliferative, top layer
 
 experimental conditions:
-duration -> 6 h
+duration -> 60 h
+step -> 6 h
 media -> RPMI, 200 ul
 oxygen -> standard
 treatment -> none
