@@ -159,6 +159,7 @@ class ALISON:
 			for oo in tqdm.tqdm(range(len(self.cell_population))):
 				idx_cell = ALISON.pick_one(self.cell_population)
 				o = self.cell_population[idx_cell]
+				new_cells = {}
 				for r in range(step):
 					if o.type == 'fibroblasts':
 						check_neighbourhood = self.get_local(self.cell_population, o, 'cancer', 'proliferative',
@@ -177,6 +178,7 @@ class ALISON:
 					log, self.cell_population = self.execute_rule(o, to_execute, self.mesh, self.initial_conditions, self.neighbours, t, step-r,
 										self.cell_population, self.fields)
 
+
 					#if o.type =='cancer':
 					#	print(o.type,o.status, probability_vector, log)
 					if o.update_status == 0:
@@ -184,9 +186,11 @@ class ALISON:
 						raise ValueError('something wrong with the update')
 					if log['is_new_cell']:
 						self.cell_population.append(log['new_cell'])
+						new_cells[log['new_cell']] = r
 					if log['executed_rule'] == 'degradation':
 						self.cell_population.pop(idx_cell)
-
+				if len(new_cells)>0:
+					self.simulate_new_cells(new_cells,step, t, total_duration)
 			self.update_tracking_variables(simulation_folder, self.base_name, t,
 										   self.fields,
 										   self.cell_population)
@@ -206,6 +210,48 @@ class ALISON:
 			# self.fields[f].assign(trial_function_e)
 		file_out = self.save_output(simulation_folder, out_name)
 		return file_out
+
+
+	def simulate_new_cells(self, new_cells, steps, t, total_duration):
+		while len(new_cells)>0:
+			keys = list(new_cells.keys())
+			cll =keys[0]
+			step_created = new_cells[cll]
+			for s in range(steps-step_created):
+				if cll.type == 'fibroblasts':
+					check_neighbourhood = self.get_local(self.cell_population, cll, 'cancer', 'proliferative',
+														 self.neighbours)
+					if check_neighbourhood > 0:
+						cll.time_since_cancer_in_neighbourhood += 1
+					else:
+						if cll.time_since_cancer_in_neighbourhood > 0:
+							cll.time_since_cancer_in_neighbourhood -= 1  # if all the cancer cells are
+				# gone from the fibroblast's neighbourhood its likelihood of becoming an activated CAF drops
+
+				probability_vector = self.get_probabilities(cll, t, self.fields, self.neighbours, self.cell_population,
+															self.experiment_configuration['treatment'], total_duration)
+
+				to_execute = self.choose_rule(probability_vector)
+				log, self.cell_population = self.execute_rule(cll, to_execute, self.mesh, self.initial_conditions,
+															  self.neighbours, t, s,
+															  self.cell_population, self.fields)
+
+				# if o.type =='cancer':
+				#	print(o.type,o.status, probability_vector, log)
+				if cll.update_status == 0:
+					print(log)
+					raise ValueError('something wrong with the update')
+				if log['is_new_cell']:
+					self.cell_population.append(log['new_cell'])
+					new_cells[log['new_cell']] = step_created+s
+				if log['executed_rule'] == 'degradation':
+					for icl, cl in enumerate(self.cell_population):
+						if cl == cll:
+							self.cell_population.pop(icl)
+			new_cells.pop(cll)
+
+
+
 
 	@staticmethod
 	def find_new_index(old_pop, new_pop, idx):
