@@ -62,6 +62,8 @@ file_out = PdfPages('/Users/marilisacortesi/Desktop/longer_time/PEO1_longer_time
 
 data = {}
 for f in files:
+	if f.startswith('.'):
+		continue
 	time = int(f.split('configuration_')[2].split('h')[0])
 	if time not in data:
 		data[time] = {}
