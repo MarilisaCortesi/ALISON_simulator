@@ -64,7 +64,11 @@ for c in conditions:
 			else:
 				population_change = doubling_rates[c][cc]*clones[c][cc] -((death_rates[c][cc]/100)*clones[c][cc])
 				clones[c][cc]+= population_change
-	print('s')
+out_var = {'clones': clones, 'doubling_rates': doubling_rates, 'metastasis_rates': metastasis_rates, 'same_features': same_features_rates,
+		   'treatment': treatment_sensitivity, 'death_rate': death_rates}
+fileout = '/scratch/mcortesi/outputs/clones.pkl'
+with open(fileout, 'wb') as F:
+	pickle.dump(F, out_var)
 
 
 
