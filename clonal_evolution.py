@@ -26,7 +26,8 @@ metastasis_rates = {}
 same_features_rates = {}
 treatment_sensitivity = {}
 death_rates = {}
-for c in conditions[0:200]:
+list_conds = list(conditions.keys())
+for c in list_conds[0:200]:
 	clones[c] = {0:starting_population}
 	doubling_rates[c] = {0: conditions[c]['doubling_time']}
 	metastasis_rates[c] = {0:conditions[c]['metastasis_rate']}
