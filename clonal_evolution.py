@@ -26,7 +26,7 @@ metastasis_rates = {}
 same_features_rates = {}
 treatment_sensitivity = {}
 death_rates = {}
-for c in conditions:
+for c in conditions[0:200]:
 	clones[c] = {0:starting_population}
 	doubling_rates[c] = {0: conditions[c]['doubling_time']}
 	metastasis_rates[c] = {0:conditions[c]['metastasis_rate']}
@@ -64,11 +64,11 @@ for c in conditions:
 			else:
 				population_change = doubling_rates[c][cc]*clones[c][cc] -((death_rates[c][cc]/100)*clones[c][cc])
 				clones[c][cc]+= population_change
-out_var = {'clones': clones, 'doubling_rates': doubling_rates, 'metastasis_rates': metastasis_rates, 'same_features': same_features_rates,
+	out_var = {'clones': clones, 'doubling_rates': doubling_rates, 'metastasis_rates': metastasis_rates, 'same_features': same_features_rates,
 		   'treatment': treatment_sensitivity, 'death_rate': death_rates}
-fileout = '/scratch/mcortesi/outputs/clones.pkl'
-with open(fileout, 'wb') as F:
-	pickle.dump(F, out_var)
+	fileout = '/scratch/mcortesi/outputs/clones_'+str(c)+'.pkl'
+	with open(fileout, 'wb') as F:
+		pickle.dump(F, out_var)
 
 
 
