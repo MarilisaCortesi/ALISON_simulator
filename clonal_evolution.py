@@ -18,7 +18,7 @@ metastasis_rate_range = [1, 25, 50]
 same_features_range = [1,50, 100]
 death_rate_range = [1,25, 50]
 treatment_sensitivity_range = [0,1]
-max_clones = 1000
+max_clones = 2
 
 
 starting_population=10 # number of cells in the starting population

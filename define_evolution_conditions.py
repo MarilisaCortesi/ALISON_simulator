@@ -5,7 +5,7 @@ import pickle as pkl
 
 
 doubling_times = np.arange(0.83, 5, 0.01)
-metastasis_rate = np.arange(0,51,0.5)
+metastasis_rate = np.arange(0,10,0.005)
 same_features_range = np.arange(0, 100,0.5)  #correlate with metastasis rate
 death_rate_range = np.arange(0,51,0.5)
 treatment_sensitivity_range = np.arange(0,100,1) # inversely correlated width death rate
@@ -21,13 +21,13 @@ for id, d in enumerate(doubling_ids):
 	conditions[id]['metastasis_rate'] = metastasis_rate[idx]
 	conditions[id]['death_rate'] = death_rate_range[idx]
 	met_rate_perc = metastasis_rate[idx]/(max(metastasis_rate)- min(metastasis_rate))
-	jitter_same_features = random.uniform(-0.1, 0.1)
-	same_features_perc = met_rate_perc+jitter_same_features
-	same_features_rate = same_features_perc*(max(same_features_range)-min(same_features_range))
+	jitter_same_features = random.uniform(-0.01, 0.01)
+	same_features_perc = 100 - ((100*met_rate_perc)+jitter_same_features)
+	same_features_rate = (same_features_perc/100)*(max(same_features_range)-min(same_features_range))
 	conditions[id]['same_features'] = same_features_rate
-	death_rate_perc_inv = 1- (death_rate_range[idx]/(max(death_rate_range)-min(death_rate_range)))
-	jitter_treatment = random.uniform(-0.1, 0.1)
-	treatment_sensitivity_perc = death_rate_perc_inv+jitter_treatment
+	death_rate_perc = death_rate_range[idx]/(max(death_rate_range)-min(death_rate_range))
+	jitter_treatment = random.uniform(-0.01, 0.01)
+	treatment_sensitivity_perc = death_rate_perc+jitter_treatment
 	treatment_sensitivity_rate = treatment_sensitivity_perc*(max(treatment_sensitivity_range)-min(treatment_sensitivity_range))
 	conditions[id]['treatment_sensitivity']= treatment_sensitivity_rate
 
