@@ -14,7 +14,7 @@ death_rate = 0.01 # rate of death within the culture
 treatment_sensitivity = 1 # percentage of sensitivity to treatment
 '''
 range_doubling_time = [0.83, 5] # 20 to 120 h
-metastasis_rate_range = [1, 25, 50]
+metastasis_rate_range = [0, 5, 10]
 same_features_range = [1,50, 100]
 death_rate_range = [1,25, 50]
 treatment_sensitivity_range = [0,1]
