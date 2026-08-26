@@ -4,9 +4,9 @@ import numpy as np
 import pickle as pkl
 
 
-doubling_times = np.arange(0.83, 5, 0.01)
+doubling_times = np.arange(0.4, 2.4, 0.01) # da correggere
 metastasis_rate = np.arange(0,10,0.005)
-same_features_range = np.arange(0, 100,0.5)  #correlate with metastasis rate
+same_features_range = np.arange(1, 100,0.5)  #correlate with metastasis rate
 death_rate_range = np.arange(0,51,0.5)
 treatment_sensitivity_range = np.arange(0,100,1) # inversely correlated width death rate
 
